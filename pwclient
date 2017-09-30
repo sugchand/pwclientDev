@@ -49,7 +49,7 @@ import io
 # the hardcoded default value specified here.
 DEFAULT_URL = "http://patchwork/xmlrpc/"
 CONFIG_FILE = os.path.expanduser('~/.pwclientrc')
-
+COMMIT_LIST_FILE='.list-patches'
 
 class Filter(object):
 
@@ -176,9 +176,59 @@ def person_ids_by_name(rpc, name):
     people = rpc.person_list(name, 0)
     return [x['id'] for x in people]
 
+def download_patches(rpc, download_str=None):
+    if not os.path.isfile(COMMIT_LIST_FILE):
+        print("List the patches using 'pwclient list' before running download")
+        return
+    with open(COMMIT_LIST_FILE) as fp:
+        lines = fp.readlines()
+        lines = [line.strip() for line in lines]
+    fp.close()
+    if download_str is None:
+        print(" ***SELECT PATCHES FROM THE FOLLOWING LIST TO DOWNLOAD"
+              "(Eg: pwclient download -n 1-3 or 1,2,3)***")
+        print('\n'.join(lines))
+        return
+
+    download_str = " ".join(download_str)
+    download_elmnts=[]
+    if not download_str:
+        print("wrong choice, cannot download patches")
+    download_list = re.split(",", download_str)
+    download_list = [s.strip() for s in download_list if s]
+
+    # download list may have items in form [1, 2-3, 4,5]
+    for item in download_list:
+        if '-' in item:
+            sub_arr=re.split("-", item)
+            if len(sub_arr) != 2:
+                print("Wrong length, cannot download the list of entries")
+            start = int(sub_arr[0].replace(" ", ""))
+            end = int(sub_arr[1].replace(" ", ""))
+            if end < start:
+                print("Wrong list offset %d-%d" %(start, end))
+            for idx in range(start, end + 1):
+                download_elmnts.append(idx)
+        else:
+            # One element, so start and end is same.
+            start = int(item.replace(" ", ""))
+            end = start
+            download_elmnts.append(start)
+    print("Downloading the following patches ..")
+    with open(COMMIT_LIST_FILE) as fp:
+        lines = fp.readlines()
+        lines = [line.strip() for line in lines]
+    for line in lines:
+        idx = line.split(" ")
+        idx = [s.strip() for s in idx if s]
+        seq_no = int(idx[0])
+        if seq_no in download_elmnts:
+            print(line)
+            action_get(rpc, idx[1].strip())
 
 def list_patches(patches, format_str=None):
     """Dump a list of patches to stdout."""
+    patchfile = open(COMMIT_LIST_FILE, 'w')
     if format_str:
         format_field_re = re.compile("%{([a-z0-9_]+)}")
 
@@ -196,12 +246,16 @@ def list_patches(patches, format_str=None):
         for idx, patch in enumerate(patches):
             print(idx, format_field_re.sub(patch_field, format_str))
     else:
+        # Do not change the order of printing, especially the ID,
+        # Its been used for patch download in later stages.
         print("%-4s %-7s %-12s %s" % ("No:", "ID", "State", "Name"))
         print("%-4s %-7s %-12s %s" % ("---", "--", "-----", "----"))
         for idx, patch in enumerate(patches):
-            print("%-4d %-7d %-12s %s" %
-                  (idx, patch['id'], patch['state'], patch['name']))
-
+            patch_str = "%-4d %-7d %-12s %s" %\
+                        (idx, patch['id'], patch['state'], patch['name'])
+            print(patch_str)
+            patchfile.write("%s\n" % patch_str)
+    patchfile.close()
 
 def action_list(rpc, filter, submitter_str, delegate_str, format_str=None):
     filter.resolve_ids(rpc)
@@ -411,7 +465,10 @@ def main():
         '-p', metavar='PROJECT',
         help='''Lookup patch in project'''
     )
-
+    download_parse_filter = argparse.ArgumentParser(add_help=False)
+    download_parse_filter.add_argument(
+         '-n', metavar='NUM',
+         help='''Download the patches using seq no. Eg:1,2  or 1-4''')
     filter_parser = argparse.ArgumentParser(add_help=False)
     filter_parser.add_argument(
         '-s', metavar='STATE',
@@ -544,6 +601,11 @@ installed locales.
         help='''View a patch'''
     )
     view_parser.set_defaults(subcmd='view')
+    download_parser = subparsers.add_parser(
+        'download', parents=[download_parse_filter], conflict_handler='resolve',
+        help='''download patch series'''
+    )
+    download_parser.set_defaults(subcmd="download")
     update_parser = subparsers.add_parser(
         'update', parents=[hash_parser], conflict_handler='resolve',
         help='''Update patch''',
@@ -743,6 +805,10 @@ installed locales.
         if args.get('patch_name') is not None:
             filt.add("name__icontains", args.get('patch_name'))
         action_list(rpc, filt, submitter_str, delegate_str, format_str)
+
+    elif action == 'download':
+        download_str = args.get("n")
+        download_patches(rpc, download_str)
 
     elif action.startswith('project'):
         action_projects(rpc)
