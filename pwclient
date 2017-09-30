@@ -193,14 +193,14 @@ def list_patches(patches, format_str=None):
 
             return val
 
-        for patch in patches:
-            print(format_field_re.sub(patch_field, format_str))
+        for idx, patch in enumerate(patches):
+            print(idx, format_field_re.sub(patch_field, format_str))
     else:
-        print("%-7s %-12s %s" % ("ID", "State", "Name"))
-        print("%-7s %-12s %s" % ("--", "-----", "----"))
-        for patch in patches:
-            print("%-7d %-12s %s" %
-                  (patch['id'], patch['state'], patch['name']))
+        print("%-4s %-7s %-12s %s" % ("No:", "ID", "State", "Name"))
+        print("%-4s %-7s %-12s %s" % ("---", "--", "-----", "----"))
+        for idx, patch in enumerate(patches):
+            print("%-4d %-7d %-12s %s" %
+                  (idx, patch['id'], patch['state'], patch['name']))
 
 
 def action_list(rpc, filter, submitter_str, delegate_str, format_str=None):
