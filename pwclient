@@ -450,7 +450,7 @@ def main():
     filter_parser.add_argument(
         '-f', metavar='FORMAT',
         help='''Print output in the given format. You can use tags matching '''
-        '''fields, e.g. %%{id}, %%{state}, or %%{msgid}.'''
+        '''fields, e.g. %%{id},%%{state},%%{submitter} or %%{msgid}.'''
     )
     filter_parser.add_argument(
         'patch_name', metavar='STR', nargs='?',
