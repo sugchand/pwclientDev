@@ -15,6 +15,10 @@ of inputting the ids one by one.
 
 ## How to use the proposed changes.
 
+* Setup the proxy env if the client is running behind network proxy.
+  Note :: It is noted that the https_proxy doesnt really work for the pwclient.
+  So as a workaround, set the http_proxy value for https_proxy.
+
 * List the required patches using proper filters.
 
 ```
