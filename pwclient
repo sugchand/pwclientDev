@@ -25,6 +25,7 @@ from __future__ import unicode_literals
 
 import os
 import sys
+import datetime
 try:
     import xmlrpclib
 except ImportError:
@@ -215,6 +216,12 @@ def download_patches(rpc, download_str=None):
             end = start
             download_elmnts.append(start)
     print("Downloading the following patches ..")
+
+    #Create a directory to download patches.
+    download_dir = os.path.join(os.getcwd(),
+                   datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+    if not os.path.exists(download_dir):
+            os.makedirs(download_dir)
     with open(COMMIT_LIST_FILE) as fp:
         lines = fp.readlines()
         lines = [line.strip() for line in lines]
@@ -224,7 +231,7 @@ def download_patches(rpc, download_str=None):
         seq_no = int(idx[0])
         if seq_no in download_elmnts:
             print(line)
-            action_get(rpc, idx[1].strip())
+            action_get(rpc, idx[1].strip(), patch_dir=download_dir)
 
 def list_patches(patches, format_str=None):
     """Dump a list of patches to stdout."""
@@ -350,15 +357,16 @@ def action_info(rpc, patch_id):
         print("- %- 14s: %s" % (key, value))
 
 
-def action_get(rpc, patch_id):
+def action_get(rpc, patch_id, patch_dir = None):
     patch = rpc.patch_get(patch_id)
     s = rpc.patch_get_mbox(patch_id)
 
     if patch == {} or len(s) == 0:
         sys.stderr.write("Unable to get patch %d\n" % patch_id)
         sys.exit(1)
-
-    base_fname = fname = os.path.basename(patch['filename'])
+    if patch_dir is None:
+        patch_dir = os.getcwd()
+    base_fname = fname = patch_dir + "/" + os.path.basename(patch['filename'])
     i = 0
     while os.path.exists(fname):
         fname = "%s.%d" % (base_fname, i)
