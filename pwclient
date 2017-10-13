@@ -51,6 +51,7 @@ import io
 DEFAULT_URL = "http://patchwork/xmlrpc/"
 CONFIG_FILE = os.path.expanduser('~/.pwclientrc')
 COMMIT_LIST_FILE='.list-patches'
+commit_idx=0
 
 class Filter(object):
 
@@ -233,9 +234,11 @@ def download_patches(rpc, download_str=None):
             print(line)
             action_get(rpc, idx[1].strip(), patch_dir=download_dir)
 
-def list_patches(patches, format_str=None):
+def list_patches(patches, format_str=None, patchfile=None):
     """Dump a list of patches to stdout."""
-    patchfile = open(COMMIT_LIST_FILE, 'w')
+    global commit_idx
+    if not patchfile:
+        return
     if format_str:
         format_field_re = re.compile("%{([a-z0-9_]+)}")
 
@@ -250,23 +253,24 @@ def list_patches(patches, format_str=None):
 
             return val
 
-        for idx, patch in enumerate(patches):
-            print(idx, format_field_re.sub(patch_field, format_str))
+        for patch in patches:
+            print(commit_idx, format_field_re.sub(patch_field, format_str))
+            commit_idx = commit_idx + 1
     else:
         # Do not change the order of printing, especially the ID,
         # Its been used for patch download in later stages.
         print("%-4s %-7s %-12s %s" % ("No:", "ID", "State", "Name"))
         print("%-4s %-7s %-12s %s" % ("---", "--", "-----", "----"))
-        for idx, patch in enumerate(patches):
+        for patch in patches:
             patch_str = "%-4d %-7d %-12s %s" %\
-                        (idx, patch['id'], patch['state'], patch['name'])
+                        (commit_idx, patch['id'], patch['state'], patch['name'])
             print(patch_str)
             patchfile.write("%s\n" % patch_str)
-    patchfile.close()
+            commit_idx = commit_idx + 1
 
 def action_list(rpc, filter, submitter_str, delegate_str, format_str=None):
     filter.resolve_ids(rpc)
-
+    patchfile = open(COMMIT_LIST_FILE, 'w')
     if submitter_str is not None:
         ids = person_ids_by_name(rpc, submitter_str)
         if len(ids) == 0:
@@ -280,7 +284,7 @@ def action_list(rpc, filter, submitter_str, delegate_str, format_str=None):
                 f = filter
                 f.add("submitter_id", id)
                 patches = rpc.patch_list(f.d)
-                list_patches(patches, format_str)
+                list_patches(patches, format_str, patchfile)
         return
 
     if delegate_str is not None:
@@ -296,12 +300,12 @@ def action_list(rpc, filter, submitter_str, delegate_str, format_str=None):
                 f = filter
                 f.add("delegate_id", id)
                 patches = rpc.patch_list(f.d)
-                list_patches(patches, format_str)
+                list_patches(patches, format_str, patchfile)
         return
 
     patches = rpc.patch_list(filter.d)
-    list_patches(patches, format_str)
-
+    list_patches(patches, format_str, patchfile)
+    patchfile.close()
 
 def action_projects(rpc):
     projects = rpc.project_list("", 0)
