@@ -10,3 +10,5 @@ default=openvswitch
 [openvswitch]
 url= https://patchwork.ozlabs.org/xmlrpc/
 
+[dpdk]
+url= http://dpdk.org/dev/patchwork/xmlrpc/

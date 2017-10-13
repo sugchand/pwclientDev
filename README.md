@@ -20,7 +20,8 @@ of inputting the ids one by one.
    cp pwclientrc ~/.pwclientrc
 ```
 
-* Setup the proxy env if the client is running behind network proxy.
+* Setup the proxy (http_proxy & https_proxy) env if the client is running
+  behind network proxy.
   Note :: It is noted that the https_proxy doesnt really work for the pwclient.
   So as a workaround, set the http_proxy value for https_proxy.
 
@@ -34,6 +35,11 @@ of inputting the ids one by one.
     ./pwclient list -w "sugesh"
 ```
 
+  The default project is OVS(openvswitch). To work on patches from different
+  project 'dpdk' , mention the project name in the command line.
+```
+   ./pwclient list -w "sugesh" -p dpdk
+```
 * Download the patches using the patch sequence number instead of ID.
 
 ```
