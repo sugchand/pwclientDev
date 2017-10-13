@@ -15,6 +15,11 @@ of inputting the ids one by one.
 
 ## How to use the proposed changes.
 
+* Copy the default pwclientrc file to user home directory for OVS patches.
+```
+   cp pwclientrc ~/.pwclientrc
+```
+
 * Setup the proxy env if the client is running behind network proxy.
   Note :: It is noted that the https_proxy doesnt really work for the pwclient.
   So as a workaround, set the http_proxy value for https_proxy.
@@ -35,4 +40,4 @@ of inputting the ids one by one.
     ./pwclient download -n 2-4,5,1053
 ```
 
-* Apply the patches on the local repo.
+* Apply the patches from the patch directory to the local repo.
